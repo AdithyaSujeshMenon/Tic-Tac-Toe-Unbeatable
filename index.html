@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    
+    /* Additional style for the info div */
+        .info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            max-width: 80%;
+            display: none;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+        }
+
+    .board {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
+      margin-top: 20px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: lightgray;
+      cursor: pointer;
+    }
+
+    .restart-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 15px;
+    }
+
+    .glow-green {
+      background-color: lightgreen !important;
+    }
+
+    .glow-red {
+      background-color: #ff8080 !important;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="alert">Tic-Tac-Toe <br>(Unbeatable)</h1>
+  <div class="info" id="info-div">
+        <span class="close-btn" onclick="closeInfo()">(x)</span>
+        <p><strong>Made by Adithya007</strong><br>-----------<br>Super-efficient algorithms like alpha-beta pruning and minimax used here, thus making this program unbeatable.</p>
+    </div>
+  <div id="message">Your turn (X)</div>
+  <div class="board" id="board"></div>
+  <button class="restart-button" id="restart-button">Restart Game</button>
+  <script>
+      
+      function alerts() {
+       alert("");
+     }
+     
+     document.getElementById('alert').addEventListener('click', function() {
+            // Display the additional div when the "About" link is clicked
+            document.getElementById('info-div').style.display = 'block';
+        });
+
+        function closeInfo() {
+            // Hide the additional div when the close button is clicked
+            document.getElementById('info-div').style.display = 'none';
+        }
+      
+     
+    const board = document.getElementById('board');
+    const message = document.getElementById('message');
+    const restartButton = document.getElementById('restart-button');
+    const winningCombos = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+      [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+      [0, 4, 8], [2, 4, 6] // Diagonals
+    ];
+
+    let currentPlayer = 'X';
+    let gameBoard = ['', '', '', '', '', '', '', '', ''];
+    let gameActive = true;
+
+    // Create cells and add click event listeners
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.addEventListener('click', () => handleCellClick(i));
+      board.appendChild(cell);
+    }
+
+    restartButton.addEventListener('click', restartGame);
+
+    function handleCellClick(index) {
+      if (gameBoard[index] === '' && gameActive) {
+        gameBoard[index] = currentPlayer;
+        updateCell(index);
+        if (checkWin(currentPlayer)) {
+          endGame(`Player ${currentPlayer} wins!`, 'glow-green');
+        } else if (gameBoard.indexOf('') === -1) {
+          endGame("It's a draw!", 'glow-red');
+        } else {
+          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+          message.textContent = `Your turn (${currentPlayer})`;
+          if (currentPlayer === 'O' && gameActive) {
+            setTimeout(computerMove, 500);
+          }
+        }
+      }
+    }
+
+    function updateCell(index) {
+      const cell = board.children[index];
+      cell.textContent = currentPlayer;
+      cell.style.backgroundColor = 'lightgray';
+    }
+
+    function computerMove() {
+      const bestMove = getBestMove();
+      gameBoard[bestMove.index] = currentPlayer;
+      updateCell(bestMove.index);
+      if (checkWin(currentPlayer)) {
+        endGame(`Player ${currentPlayer} wins!`, 'glow-green');
+      } else if (gameBoard.indexOf('') === -1) {
+        endGame("It's a draw!", 'glow-red');
+      } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        message.textContent = `Your turn (${currentPlayer})`;
+      }
+    }
+
+    function getBestMove() {
+      let bestScore = -Infinity;
+      let bestMove;
+      for (let i = 0; i < 9; i++) {
+        if (gameBoard[i] === '') {
+          gameBoard[i] = 'O';
+          const score = minimax(gameBoard, 0, false);
+          gameBoard[i] = '';
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = i;
+          }
+        }
+      }
+      return { index: bestMove };
+    }
+
+    function minimax(board, depth, isMaximizing) {
+      const scores = {
+        X: -1,
+        O: 1,
+        draw: 0
+      };
+      const result = checkResult();
+
+      if (result !== null) {
+        return scores[result];
+      }
+
+      if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === '') {
+            board[i] = 'O';
+            const score = minimax(board, depth + 1, false);
+            board[i] = '';
+            bestScore = Math.max(score, bestScore);
+          }
+        }
+        return bestScore;
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (board[i] === '') {
+            board[i] = 'X';
+            const score = minimax(board, depth + 1, true);
+            board[i] = '';
+            bestScore = Math.min(score, bestScore);
+          }
+        }
+        return bestScore;
+      }
+    }
+    
+    
+
+    function checkResult() {
+      for (const combo of winningCombos) {
+        const [a, b, c] = combo;
+        if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+          return gameBoard[a];
+        }
+      }
+      if (!gameBoard.includes('')) {
+        return 'draw';
+      }
+      return null;
+    }
+
+    function checkWin(player) {
+      for (const combo of winningCombos) {
+        const [a, b, c] = combo;
+        if (gameBoard[a] === player && gameBoard[b] === player && gameBoard[c] === player) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function endGame(resultMessage, styleClass) {
+      message.textContent = resultMessage;
+      gameActive = false;
+      if (styleClass) {
+        board.classList.add(styleClass);
+      }
+    }
+
+    function restartGame() {
+      currentPlayer = 'X';
+      gameBoard = ['', '', '', '', '', '', '', '', ''];
+      gameActive = true;
+      message.textContent = 'Your turn (X)';
+      board.classList.remove('glow-green', 'glow-red');
+      for (let i = 0; i < 9; i++) {
+        const cell = board.children[i];
+        cell.textContent = '';
+        cell.style.backgroundColor = 'lightgray';
+        
+      }
+      
+     
+     
+    }
+  </script>
+</body>
+</html>
